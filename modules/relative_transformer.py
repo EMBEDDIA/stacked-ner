@@ -14,13 +14,13 @@ class RelativeEmbedding(nn.Module):
         max_pos = self.padding_idx + seq_len
         if max_pos > self.origin_shift:
             weights = self.get_embedding(
-                max_pos*2,
+                max_pos * 2,
                 self.embedding_dim,
                 self.padding_idx,
             )
             weights = weights.to(self._float_tensor)
             del self.weights
-            self.origin_shift = weights.size(0)//2
+            self.origin_shift = weights.size(0) // 2
             self.register_buffer('weights', weights)
 
         positions = torch.arange(-seq_len,
@@ -46,7 +46,7 @@ class RelativeSinusoidalPositionalEmbedding(RelativeEmbedding):
         self.padding_idx = padding_idx
         assert init_size % 2 == 0
         weights = self.get_embedding(
-            init_size+1,
+            init_size + 1,
             embedding_dim,
             padding_idx,
         )
@@ -61,7 +61,7 @@ class RelativeSinusoidalPositionalEmbedding(RelativeEmbedding):
         half_dim = embedding_dim // 2
         emb = math.log(10000) / (half_dim - 1)
         emb = torch.exp(torch.arange(half_dim, dtype=torch.float) * -emb)
-        emb = torch.arange(-num_embeddings//2, num_embeddings //
+        emb = torch.arange(-num_embeddings // 2, num_embeddings //
                            2, dtype=torch.float).unsqueeze(1) * emb.unsqueeze(0)
         emb = torch.cat([torch.sin(emb), torch.cos(emb)],
                         dim=1).view(num_embeddings, -1)
@@ -69,17 +69,18 @@ class RelativeSinusoidalPositionalEmbedding(RelativeEmbedding):
             emb = torch.cat([emb, torch.zeros(num_embeddings, 1)], dim=1)
         if padding_idx is not None:
             emb[padding_idx, :] = 0
-        self.origin_shift = num_embeddings//2 + 1
+        self.origin_shift = num_embeddings // 2 + 1
         return emb
 
 
 class RelativeMultiHeadAttn(nn.Module):
-    def __init__(self, d_model, n_head, dropout, r_w_bias=None, r_r_bias=None, scale=False):
+    def __init__(self, d_model, n_head, dropout,
+                 r_w_bias=None, r_r_bias=None, scale=False):
         """
 
         :param int d_model:
         :param int n_head:
-        :param dropout: 
+        :param dropout:
         :param r_w_bias: n_head x head_dim or None, 如果为dim
         :param r_r_bias: n_head x head_dim or None,
         :param scale:
@@ -92,7 +93,7 @@ class RelativeMultiHeadAttn(nn.Module):
         self.dropout_layer = nn.Dropout(dropout)
 
         self.pos_embed = RelativeSinusoidalPositionalEmbedding(
-            d_model//n_head, 0, 1200)
+            d_model // n_head, 0, 1200)
 
         if scale:
             self.scale = math.sqrt(d_model // n_head)

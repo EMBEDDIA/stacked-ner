@@ -16,12 +16,12 @@ class MultiHeadAttn(nn.Module):
         assert d_model % n_head == 0
 
         self.n_head = n_head
-        self.qkv_linear = nn.Linear(d_model, 3*d_model)
+        self.qkv_linear = nn.Linear(d_model, 3 * d_model)
         self.fc = nn.Linear(d_model, d_model)
         self.dropout_layer = nn.Dropout(dropout)
 
         if scale:
-            self.scale = math.sqrt(d_model//n_head)
+            self.scale = math.sqrt(d_model // n_head)
         else:
             self.scale = 1
 
@@ -40,7 +40,7 @@ class MultiHeadAttn(nn.Module):
         v = v.view(batch_size, max_len, self.n_head, -1).transpose(1, 2)
 
         attn = torch.matmul(q, k)  # batch_size x n_head x max_len x max_len
-        attn = attn/self.scale
+        attn = attn / self.scale
         attn.masked_fill_(mask=mask[:, None, None].eq(0), value=float('-inf'))
 
         # batch_size x n_head x max_len x max_len
@@ -55,7 +55,8 @@ class MultiHeadAttn(nn.Module):
 
 
 class TransformerLayer(nn.Module):
-    def __init__(self, d_model, self_attn, feedforward_dim, after_norm, dropout):
+    def __init__(self, d_model, self_attn,
+                 feedforward_dim, after_norm, dropout):
         super().__init__()
 
         self.norm1 = nn.LayerNorm(d_model)
@@ -189,7 +190,8 @@ class SinusoidalPositionalEmbedding(nn.Module):
         self.weights = self.weights.to(self._float_tensor)
 
         positions = make_positions(input, self.padding_idx)
-        return self.weights.index_select(0, positions.view(-1)).view(bsz, seq_len, -1).detach()
+        return self.weights.index_select(
+            0, positions.view(-1)).view(bsz, seq_len, -1).detach()
 
     def max_positions(self):
         """Maximum number of supported positions."""

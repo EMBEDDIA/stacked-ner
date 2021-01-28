@@ -2,7 +2,7 @@
 
 
 def set_rng_seed(rng_seed: int = None, random: bool = True, numpy: bool = True,
-                 pytorch: bool=True, deterministic: bool=True):
+                 pytorch: bool = True, deterministic: bool = True):
     if rng_seed is None:
         import time
         rng_seed = int(time.time() % 1000000)
@@ -13,7 +13,7 @@ def set_rng_seed(rng_seed: int = None, random: bool = True, numpy: bool = True,
         try:
             import numpy
             numpy.random.seed(rng_seed)
-        except:
+        except BaseException:
             pass
     if pytorch:
         try:
@@ -22,6 +22,6 @@ def set_rng_seed(rng_seed: int = None, random: bool = True, numpy: bool = True,
             torch.cuda.manual_seed_all(rng_seed)
             if deterministic:
                 torch.backends.cudnn.deterministic = True
-        except:
+        except BaseException:
             pass
     return rng_seed

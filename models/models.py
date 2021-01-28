@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 class StackedTransformersCRF(nn.Module):
     def __init__(self, tag_vocabs, embed, num_layers, d_model, n_head, feedforward_dim, dropout,
-                 after_norm=True, attn_type='adatrans',  bi_embed=None,
+                 after_norm=True, attn_type='adatrans', bi_embed=None,
                  fc_dropout=0.3, pos_embed=None, scale=False, dropout_attn=None):
 
         super().__init__()
@@ -44,7 +44,8 @@ class StackedTransformersCRF(nn.Module):
 
         self.fc_dropout = nn.Dropout(fc_dropout)
 
-    def _forward(self, words, target=None, target1=None, target2=None, target3=None, target4=None, target5=None, target6=None, bigrams=None, seq_len=None):
+    def _forward(self, words, target=None, target1=None, target2=None, target3=None,
+                 target4=None, target5=None, target6=None, bigrams=None, seq_len=None):
 
         torch.cuda.empty_cache()
 
@@ -53,8 +54,8 @@ class StackedTransformersCRF(nn.Module):
         if self.bi_embed is not None:
             bigrams = self.bi_embed(bigrams)
             words = torch.cat([words, bigrams], dim=-1)
-        
-        #Adrián
+
+        # Adrián
         #import pdb;pdb.set_trace()
         #targets = [target, target1, target2, target3, target4, target5, target6]
         targets = [target]
@@ -85,8 +86,10 @@ class StackedTransformersCRF(nn.Module):
                     results['pred' + str(i)] = torch.argmax(logits[i], 2)
             return results
 
-    def forward(self, words, target=None, target1=None, target2=None, target3=None, target4=None, target5=None, target6=None, seq_len=None):
-        return self._forward(words, target, target1, target2, target3, target4, target5, target6, seq_len)
+    def forward(self, words, target=None, target1=None, target2=None,
+                target3=None, target4=None, target5=None, target6=None, seq_len=None):
+        return self._forward(words, target, target1, target2,
+                             target3, target4, target5, target6, seq_len)
 
     def predict(self, words, seq_len=None):
         return self._forward(words, target=None)
@@ -110,11 +113,19 @@ class BertCRF(nn.Module):
                 len(tag_vocabs[i]), include_start_end_trans=True, allowed_transitions=trans)
             self.crfs.append(crf)
 
-    def _forward(self, words, target=None, target1=None, target2=None, target3=None, target4=None, target5=None, target6=None, seq_len=None):
+    def _forward(self, words, target=None, target1=None, target2=None,
+                 target3=None, target4=None, target5=None, target6=None, seq_len=None):
         mask = words.ne(0)
         words = self.embed(words)
 
-        targets = [target, target1, target2, target3, target4, target5, target6]
+        targets = [
+            target,
+            target1,
+            target2,
+            target3,
+            target4,
+            target5,
+            target6]
 
         words_fcs = []
         for i in range(len(targets)):
@@ -134,14 +145,17 @@ class BertCRF(nn.Module):
             results = {}
             for i in range(len(targets)):
                 if i == 0:
-                    results['pred'] = self.crfs[i].viterbi_decode(logits[i], mask)[0]
+                    results['pred'] = self.crfs[i].viterbi_decode(logits[i], mask)[
+                        0]
                 else:
                     results['pred' + str(i)] = torch.argmax(logits[i], 2)
 
             return results
 
-    def forward(self, words, target=None, target1=None, target2=None, target3=None, target4=None, target5=None, target6=None, seq_len=None):
-        return self._forward(words, target, target1, target2, target3, target4, target5, target6, seq_len)
+    def forward(self, words, target=None, target1=None, target2=None,
+                target3=None, target4=None, target5=None, target6=None, seq_len=None):
+        return self._forward(words, target, target1, target2,
+                             target3, target4, target5, target6, seq_len)
 
     def predict(self, words, seq_len=None):
         return self._forward(words, target=None)

@@ -46,8 +46,8 @@ class EvaluateCallback(Callback):
         if len(self.datasets) > 0:
             for key, data in self.datasets.items():
                 tester = Tester(data=data, model=self.model,
-                                batch_size=1,#self.trainer.kwargs.get(
-                                   # 'dev_batch_size', self.batch_size),
+                                batch_size=1,  # self.trainer.kwargs.get(
+                                # 'dev_batch_size', self.batch_size),
                                 metrics=self.trainer.metrics, verbose=0,
                                 use_tqdm=self.trainer.test_use_tqdm)
                 self.testers[key] = tester

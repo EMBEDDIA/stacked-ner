@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from functools import partial
+from itertools import islice
+import time
+from tqdm import tqdm
 from models.models import StackedTransformersCRF, BertCRF
 from fastNLP import cache_results
 from fastNLP import Trainer, GradientClipCallback, WarmupCallback, CheckPointCallback
@@ -16,10 +20,6 @@ from predictor import Predictor
 import multiprocessing
 set_rng_seed(rng_seed=2020)
 
-from tqdm import tqdm
-import time
-from itertools import islice
-from functools import partial
 
 parser = argparse.ArgumentParser()
 
@@ -48,7 +48,8 @@ parser.add_argument('--no_cpu', type=int, default=10)
 # for elaborate preditions of multiple files
 parser.add_argument('--dataset_dir', type=str)  # input directory files
 parser.add_argument('--output_dir', type=str)  # output predistions directory
-parser.add_argument('--extension', type=str, default='txt')  # output predistions directory
+# output predistions directory
+parser.add_argument('--extension', type=str, default='txt')
 # for elaborate preditions of multiple files
 
 parser.add_argument('--train_dataset', type=str)
@@ -98,8 +99,8 @@ if output_dir:
         os.makedirs(output_dir)
     dataset_dir = args.dataset_dir
     # change if other extension
-    files = [os.path.join(path, f) for path, directories, files in os.walk(dataset_dir) for f in files if f.endswith("."+args.extension)
-        and not os.path.exists(os.path.join(path.replace(dataset_dir, output_dir), f))]
+    files = [os.path.join(path, f) for path, directories, files in os.walk(dataset_dir) for f in files if f.endswith("." + args.extension)
+             and not os.path.exists(os.path.join(path.replace(dataset_dir, output_dir), f))]
 #    import pdb
 #    pdb.set_trace()
 paths = {'test': args.test_dataset,
@@ -146,6 +147,7 @@ def load_data(paths, load_embed=True):
 
 data_bundle, embed = load_data(paths, load_embed=True)
 
+
 def predict(path, data_bundle, predictor, predict_on='test', do_eval=False):
 
     if do_eval:
@@ -161,19 +163,24 @@ def predict(path, data_bundle, predictor, predict_on='test', do_eval=False):
         dataset_test = data_bundle.get_dataset(predict_on)
         predictions = predictor.predict(dataset_test)
         predictions_path = path
-        
+
     with open(predictions_path, 'w') as f:
         f.write('TOKEN	NE-COARSE-LIT	NE-COARSE-METO	NE-FINE-LIT	NE-FINE-METO	NE-FINE-COMP	NE-NESTED	NEL-LIT	NEL-METO	MISC\n')
         for i, j in zip(dataset_test, predictions['pred']):
-            if type(j[0]) == int:
+            if isinstance(j[0], int):
                 f.write(str(i['raw_words'][0]) +
                         '\tO\tO\tO\tO\tO\t_\t_\t_\t_\n')
             else:
-                labels = list([data_bundle.get_vocab('target').idx2word[x] for x in j[0]])
-                labels += ['O']*len(i['raw_words'])
-                
+                labels = list([data_bundle.get_vocab(
+                    'target').idx2word[x] for x in j[0]])
+                labels += ['O'] * len(i['raw_words'])
+
                 for word, label in zip(i['raw_words'], labels):
-                    f.write(str(word) + '\t' + str(label) + '\tO\tO\tO\tO\t_\t_\t_\t_\n')
+                    f.write(
+                        str(word) +
+                        '\t' +
+                        str(label) +
+                        '\tO\tO\tO\tO\t_\t_\t_\t_\n')
             f.write('\n')
     return predictions
 
@@ -181,7 +188,7 @@ def predict(path, data_bundle, predictor, predict_on='test', do_eval=False):
 def main():
     if args.do_eval:
         torch.multiprocessing.set_start_method('spawn', force=True)
-    
+
     if args.model == 'bert':
 
         model = BertCRF(embed,
@@ -215,7 +222,8 @@ def main():
 
     callbacks = []
     clip_callback = GradientClipCallback(clip_type='value', clip_value=5)
-    evaluate_callback = EvaluateCallback(data_bundle.get_dataset('test'))#, batch_size=8, use_cuda=False)
+    # , batch_size=8, use_cuda=False)
+    evaluate_callback = EvaluateCallback(data_bundle.get_dataset('test'))
     checkpoint_callback = CheckPointCallback(
         os.path.join(directory, 'model.pth'), delete_when_train_finish=False,
         recovery_fitlog=True)

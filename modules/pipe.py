@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 """Partially https://github.com/fastnlp/fastNLP"""
-__all__ = [
-    "Loader"
-]
 
+from fastNLP.core.vocabulary import Vocabulary
+import functools
 from fastNLP.io import Pipe
 from fastNLP.io import DataBundle
-from fastNLP.io.pipe.utils import _add_words_field 
+from fastNLP.io.pipe.utils import _add_words_field
 from fastNLP.io.utils import check_loader_paths
 
-from fastNLP.io.loader.conll import _read_conll 
+from fastNLP.io.loader.conll import _read_conll
 from fastNLP.core.dataset import DataSet
 from fastNLP.core.instance import Instance
 from fastNLP import Const
@@ -29,8 +28,9 @@ def iob2bioes(tags):
         tag = tag.replace('E-', 'I-')
         if '-' not in tag:
             if tag != 'O':
-                tag = 'O' 
-        if '0' in tag: print('WTF')
+                tag = 'O'
+        if '0' in tag:
+            print('WTF')
         if tag == 'O':
             new_tags.append(tag)
         else:
@@ -55,10 +55,9 @@ def iob2bioes(tags):
 def iob2(tags):
 
     for i, tag in enumerate(tags):
-        #print(tag)
+        # print(tag)
         if '0' in tag:
             tag = 'O'
-            #print('WTF')
         tag = tag.replace('S-', 'B-')
         tag = tag.replace('E-', 'I-')
         if '-' not in tag:
@@ -68,8 +67,8 @@ def iob2(tags):
         if tag == "O":
             continue
         if '-' not in tag:
-           if tag != 'O':
-               tag = 'O'
+            if tag != 'O':
+                tag = 'O'
 
         split = tag.split("-")
         if '口' in tag:
@@ -137,18 +136,17 @@ class Loader:
         return output_dir
 
 
-import functools
-
-
 class NERLoader(Loader):
 
     def __init__(self, sep=None, dropna=True):
         super(NERLoader, self).__init__()
         headers = [
-            'raw_words', 'target'#, 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
+            # , 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
+            'raw_words', 'target'
         ]
-        # TODO: This needs to be changed if the data format is different or the order of the elements in the file is different
-        indexes = [0, 1]#, 2, 3, 4, 5, 6, 7]
+        # TODO: This needs to be changed if the data format is different or the
+        # order of the elements in the file is different
+        indexes = [0, 1]  # , 2, 3, 4, 5, 6, 7]
         if not isinstance(headers, (list, tuple)):
             raise TypeError(
                 'invalid headers: {}, should be list of strings'.format(headers))
@@ -166,8 +164,9 @@ class NERLoader(Loader):
     def _load(self, path):
         ds = DataSet()
         #import pdb;pdb.set_trace()
-        for idx, data in _read_conll(path, indexes=self.indexes, dropna=self.dropna):
-            #print(data)
+        for idx, data in _read_conll(
+                path, indexes=self.indexes, dropna=self.dropna):
+            # print(data)
             if data[0][0] == '#':
                 data[0] = data[0][1:]
                 data[1] = data[1][1:]
@@ -177,7 +176,7 @@ class NERLoader(Loader):
                 if 'TOKEN' in data[i][0]:
                     data[i] = data[i][1:]
 
-            #print(data) #data[1] = iob(list(data[1]))
+            # print(data) #data[1] = iob(list(data[1]))
             doc_start = False
             for i, h in enumerate(self.headers):
                 field = data[i]
@@ -217,10 +216,8 @@ def word_shape(words):
     return shapes
 
 
-from fastNLP.core.vocabulary import Vocabulary
-
-
-def _indexize(data_bundle, input_field_names=Const.INPUT, target_field_names=Const.TARGET, vocabulary=None):
+def _indexize(data_bundle, input_field_names=Const.INPUT,
+              target_field_names=Const.TARGET, vocabulary=None):
     if isinstance(input_field_names, str):
         input_field_names = [input_field_names]
     if isinstance(target_field_names, str):
@@ -239,8 +236,8 @@ def _indexize(data_bundle, input_field_names=Const.INPUT, target_field_names=Con
         src_vocab.index_dataset(
             *data_bundle.datasets.values(), field_name=input_field_name)
         data_bundle.set_vocab(src_vocab, input_field_name)
-     
-    #print(src_vocab)
+
+    # print(src_vocab)
     for target_field_name in target_field_names:
         tgt_vocab = Vocabulary(unknown=None, padding=None)
         tgt_vocab.from_dataset(*[ds for name, ds in data_bundle.iter_datasets() if 'train' in name],
@@ -256,7 +253,8 @@ def _indexize(data_bundle, input_field_names=Const.INPUT, target_field_names=Con
             print(warn_msg)
         print(tgt_vocab)
         #import pdb;pdb.set_trace()
-        tgt_vocab.index_dataset(*[ds for ds in data_bundle.datasets.values() if ds.has_field(target_field_name)], field_name=target_field_name)
+        tgt_vocab.index_dataset(*[ds for ds in data_bundle.datasets.values()
+                                  if ds.has_field(target_field_name)], field_name=target_field_name)
         data_bundle.set_vocab(tgt_vocab, target_field_name)
 
     return data_bundle
@@ -264,7 +262,8 @@ def _indexize(data_bundle, input_field_names=Const.INPUT, target_field_names=Con
 
 class DataReader(Pipe):
 
-    def __init__(self, encoding_type: str = 'bio', lower: bool = False, word_shape: bool=False, vocabulary=None):
+    def __init__(self, encoding_type: str = 'bio', lower: bool = False,
+                 word_shape: bool = False, vocabulary=None):
 
         if encoding_type == 'bio':
             self.convert_tag = iob2
@@ -293,10 +292,12 @@ class DataReader(Pipe):
                                 field_name=Const.INPUT, new_field_name=Const.INPUT)
 
         print(self.vocabulary)
-        _indexize(data_bundle, target_field_names=[#, 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
+        _indexize(data_bundle, target_field_names=[  # , 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
                   'target'], vocabulary=self.vocabulary)
-        #input_fields = [Const.TARGET, Const.INPUT, Const.INPUT_LEN] 'target1', 'target2', 'target3', 'target4', 'target5', 'target6',
-        input_fields = [Const.TARGET, Const.INPUT, Const.INPUT_LEN] #, 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
+        # input_fields = [Const.TARGET, Const.INPUT, Const.INPUT_LEN]
+        # 'target1', 'target2', 'target3', 'target4', 'target5', 'target6',
+        # , 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
+        input_fields = [Const.TARGET, Const.INPUT, Const.INPUT_LEN]
         target_fields = [Const.TARGET, Const.INPUT_LEN]
 
         for name, dataset in data_bundle.datasets.items():

@@ -43,14 +43,15 @@ class Predictor(object):
         data_iterator = DataSetIter(
             data, batch_size=self.batch_size, sampler=SequentialSampler(), as_numpy=False)
 
-        #predict_func = self.network.module.predict  # self.network.module for multi-GPU
+        # predict_func = self.network.module.predict  # self.network.module for
+        # multi-GPU
         try:
             predict_func = self.network.predict
         except ModuleAttributeError:
             predict_func = self.network.module.predict
 
         with torch.no_grad():
-#            for batch_x, _ in tqdm(data_iterator):
+            #            for batch_x, _ in tqdm(data_iterator):
             for batch_x, _ in tqdm(data_iterator, total=len(data_iterator)):
                 _move_dict_value_to_device(batch_x, _, device=network_device)
                 refined_batch_x = _build_args(predict_func, **batch_x)
@@ -60,7 +61,8 @@ class Predictor(object):
 
                 for key, value in prediction.items():
                     value = value.cpu().numpy()
-                    if len(value.shape) == 1 or (len(value.shape) == 2 and value.shape[1] == 1):
+                    if len(value.shape) == 1 or (
+                            len(value.shape) == 2 and value.shape[1] == 1):
                         batch_output[key].extend(value.tolist())
                     else:
                         if seq_len_field_name is not None:

@@ -23,7 +23,7 @@ class FlairEmbedding(ContextualEmbedding):
             vocab, word_dropout=word_dropout, dropout=dropout)
 
         if word_dropout > 0:
-            assert vocab.unknown != None, "When word_drop>0, Vocabulary must contain the unknown token."
+            assert vocab.unknown is not None, "When word_drop>0, Vocabulary must contain the unknown token."
 
         self._word_sep_index = -100
         if '[SEP]' in vocab:

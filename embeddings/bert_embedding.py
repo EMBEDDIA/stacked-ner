@@ -18,8 +18,9 @@ from fastNLP.core import logger, Vocabulary
 from fastNLP.io.file_utils import PRETRAINED_BERT_MODEL_DIR
 from fastNLP.modules.encoder.bert import BertModel
 from fastNLP.modules.tokenizer import BertTokenizer
-#frot transformers import BertTokenizer
+# frot transformers import BertTokenizer
 import collections
+
 
 class BertEmbedding(ContextualEmbedding):
 
@@ -31,7 +32,7 @@ class BertEmbedding(ContextualEmbedding):
             vocab, word_dropout=word_dropout, dropout=dropout)
 
         if word_dropout > 0:
-            assert vocab.unknown != None, "When word_drop>0, Vocabulary must contain the unknown token."
+            assert vocab.unknown is not None, "When word_drop>0, Vocabulary must contain the unknown token."
 
         if model_dir_or_name.lower() in PRETRAINED_BERT_MODEL_DIR:
             if 'cn' in model_dir_or_name.lower() and pool_method not in ('first', 'last'):
@@ -133,11 +134,11 @@ class BertWordPieceEncoder(nn.Module):
         if token_type_ids is None:
             with torch.no_grad():
                 sep_mask = word_pieces.eq(
-                    self._sep_index) 
+                    self._sep_index)
                 sep_mask_cumsum = sep_mask.long().flip(
                     dims=[-1]).cumsum(dim=-1).flip(dims=[-1])
                 token_type_ids = sep_mask_cumsum.fmod(2)
-                if token_type_ids[0, 0].item(): 
+                if token_type_ids[0, 0].item():
                     token_type_ids = token_type_ids.eq(0).long()
 
         word_pieces = self.drop_word(word_pieces)
@@ -155,23 +156,27 @@ class BertWordPieceEncoder(nn.Module):
                 replaceable_mask = not_sep_mask.__and__(not_cls_mask)
                 mask = torch.full_like(
                     words, fill_value=self.word_dropout, dtype=torch.float, device=words.device)
-                mask = torch.bernoulli(mask).eq(1)  
+                mask = torch.bernoulli(mask).eq(1)
                 pad_mask = words.ne(self._wordpiece_pad_index)
                 mask = pad_mask.__and__(mask).__and__(
-                    replaceable_mask)  
+                    replaceable_mask)
                 words = words.masked_fill(mask, self._wordpiece_unk_index)
         return words
 
+
 additional_special_tokens = ['<e1>', '</e1>']
+
+
 class _BertWordModel(nn.Module):
     def __init__(self, model_dir_or_name: str, vocab: Vocabulary, layers: str = '-1', pool_method: str = 'first',
                  include_cls_sep: bool = False, pooled_cls: bool = False, auto_truncate: bool = False, min_freq=2,
                  only_use_pretrain_bpe=False, truncate_embed=True):
         super().__init__()
-      
-        self.tokenizer = BertTokenizer.from_pretrained(model_dir_or_name)#, additional_special_tokens=additional_special_tokens)
+
+        # , additional_special_tokens=additional_special_tokens)
+        self.tokenizer = BertTokenizer.from_pretrained(model_dir_or_name)
         self.encoder = BertModel.from_pretrained(model_dir_or_name)
-        
+
         self._max_position_embeddings = self.encoder.config.max_position_embeddings
         encoder_layer_number = len(self.encoder.encoder.layer)
         if isinstance(layers, list):
@@ -238,7 +243,7 @@ class _BertWordModel(nn.Module):
 #
 #        if not truncate_embed:
 #            word_piece_dict.update(self.tokenizer.vocab)
-#            
+#
 #        embed = nn.Embedding(len(word_piece_dict), original_embed.size(1))
 #        new_word_piece_vocab = collections.OrderedDict()
 #
@@ -266,7 +271,8 @@ class _BertWordModel(nn.Module):
 #                logger.info(f"{unsegment_count} words are unsegmented.")
 #            else:
 #                logger.info(
-#                    f"{unsegment_count} words are unsegmented. Among them, {new_add_to_bpe_vocab} added to the BPE vocab.")
+# f"{unsegment_count} words are unsegmented. Among them,
+# {new_add_to_bpe_vocab} added to the BPE vocab.")
 
         word_to_wordpieces = []
         word_pieces_lengths = []
@@ -280,7 +286,7 @@ class _BertWordModel(nn.Module):
             word_pieces = self.tokenizer.convert_tokens_to_ids(word_pieces)
             word_to_wordpieces.append(word_pieces)
             word_pieces_lengths.append(len(word_pieces))
-            
+
         self._cls_index = self.tokenizer.vocab['[CLS]']
         self._sep_index = self.tokenizer.vocab['[SEP]']
         self._word_pad_index = vocab.padding_idx
@@ -289,7 +295,7 @@ class _BertWordModel(nn.Module):
         self.register_buffer('word_pieces_lengths',
                              torch.LongTensor(word_pieces_lengths))
         logger.debug("Successfully generate word pieces.")
-        
+
 #        self.tokenizer.save_pretrained(model_dir_or_name)
 
     def forward(self, words):
@@ -321,7 +327,8 @@ class _BertWordModel(nn.Module):
             for i in range(batch_size):
                 word_pieces_i = list(
                     chain(*self.word_to_wordpieces[word_indexes[i, :seq_len[i]]]))
-                if self.auto_truncate and len(word_pieces_i) > self._max_position_embeddings - 2:
+                if self.auto_truncate and len(
+                        word_pieces_i) > self._max_position_embeddings - 2:
                     word_pieces_i = word_pieces_i[:self._max_position_embeddings - 2]
                 word_pieces[i, 1:word_pieces_lengths[i] +
                             1] = torch.LongTensor(word_pieces_i)
@@ -365,7 +372,7 @@ class _BertWordModel(nn.Module):
                 (batch_size, batch_word_pieces_cum_length.size(1)))
         elif self.pool_method == 'last':
             batch_word_pieces_cum_length = batch_word_pieces_cum_length[:, 1:seq_len.max(
-            )+1] - 1
+            ) + 1] - 1
             batch_word_pieces_cum_length.masked_fill_(
                 batch_word_pieces_cum_length.ge(max_word_piece_length), 0)
             _batch_indexes = batch_indexes[:, None].expand(
@@ -387,7 +394,7 @@ class _BertWordModel(nn.Module):
                 tmp = tmp.masked_fill(
                     word_mask[:, :batch_word_pieces_cum_length.size(1), None].eq(False), 0)
                 outputs[l_index, :, s_shift:batch_word_pieces_cum_length.size(
-                    1)+s_shift] = tmp
+                    1) + s_shift] = tmp
 
             elif self.pool_method == 'last':
                 tmp = truncate_output_layer[_batch_indexes,
@@ -395,7 +402,7 @@ class _BertWordModel(nn.Module):
                 tmp = tmp.masked_fill(
                     word_mask[:, :batch_word_pieces_cum_length.size(1), None].eq(False), 0)
                 outputs[l_index, :, s_shift:batch_word_pieces_cum_length.size(
-                    1)+s_shift] = tmp
+                    1) + s_shift] = tmp
             elif self.pool_method == 'max':
                 for i in range(batch_size):
                     for j in range(seq_len[i]):
@@ -423,7 +430,8 @@ class _BertWordModel(nn.Module):
 
 class _BertWordPieceModel(nn.Module):
 
-    def __init__(self, model_dir_or_name: str, layers: str = '-1', pooled_cls: bool=False):
+    def __init__(self, model_dir_or_name: str, layers: str = '-1',
+                 pooled_cls: bool = False):
         super().__init__()
 
         self.tokenizer = BertTokenizer.from_pretrained(model_dir_or_name)
@@ -477,7 +485,7 @@ class _BertWordPieceModel(nn.Module):
             (len(self.layers), batch_size, max_len, bert_outputs[0].size(-1)))
         for l_index, l in enumerate(self.layers):
             bert_output = bert_outputs[l]
-            if l in (len(bert_outputs)-1, -1) and self.pooled_cls:
+            if l in (len(bert_outputs) - 1, -1) and self.pooled_cls:
                 bert_output[:, 0] = pooled_cls
             outputs[l_index] = bert_output
         return outputs

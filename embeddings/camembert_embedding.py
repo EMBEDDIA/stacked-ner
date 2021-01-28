@@ -134,7 +134,7 @@ class _CamembertWordModel(nn.Module):
 
             word_pieces = []
             word_pieces.extend(self.tokenizer.tokenize(
-                word))#, add_prefix_space=True))
+                word))  # , add_prefix_space=True))
 
             word_token_ids = self.tokenizer.convert_tokens_to_ids(word_pieces)
             if 3 in word_token_ids:
@@ -210,7 +210,8 @@ class _CamembertWordModel(nn.Module):
             for i in range(batch_size):
                 word_pieces_i = list(
                     chain(*self.word_to_wordpieces[word_indexes[i, :seq_len[i]]]))
-                if self.auto_truncate and len(word_pieces_i) > self._max_position_embeddings - 2:
+                if self.auto_truncate and len(
+                        word_pieces_i) > self._max_position_embeddings - 2:
                     word_pieces_i = word_pieces_i[:self._max_position_embeddings - 2]
                 word_pieces[i, 1:word_pieces_lengths[i] +
                             1] = torch.LongTensor(word_pieces_i)
@@ -238,7 +239,7 @@ class _CamembertWordModel(nn.Module):
         batch_word_pieces_cum_length = batch_word_pieces_length.new_zeros(
             batch_size, max_word_len + 1)
         batch_word_pieces_cum_length[:, 1:] = batch_word_pieces_length.cumsum(
-            dim=-1) 
+            dim=-1)
 
         if self.pool_method == 'first':
             batch_word_pieces_cum_length = batch_word_pieces_cum_length[:, :seq_len.max(
@@ -249,7 +250,7 @@ class _CamembertWordModel(nn.Module):
                 (batch_size, batch_word_pieces_cum_length.size(1)))
         elif self.pool_method == 'last':
             batch_word_pieces_cum_length = batch_word_pieces_cum_length[:, 1:seq_len.max(
-            )+1] - 1
+            ) + 1] - 1
             batch_word_pieces_cum_length.masked_fill_(
                 batch_word_pieces_cum_length.ge(max_word_piece_length), 0)
             _batch_indexes = batch_indexes[:, None].expand(
@@ -272,7 +273,7 @@ class _CamembertWordModel(nn.Module):
                 tmp = tmp.masked_fill(
                     word_mask[:, :batch_word_pieces_cum_length.size(1), None].eq(False), 0)
                 outputs[l_index, :, s_shift:batch_word_pieces_cum_length.size(
-                    1)+s_shift] = tmp
+                    1) + s_shift] = tmp
 
             elif self.pool_method == 'last':
                 tmp = truncate_output_layer[_batch_indexes,
@@ -280,7 +281,7 @@ class _CamembertWordModel(nn.Module):
                 tmp = tmp.masked_fill(
                     word_mask[:, :batch_word_pieces_cum_length.size(1), None].eq(False), 0)
                 outputs[l_index, :, s_shift:batch_word_pieces_cum_length.size(
-                    1)+s_shift] = tmp
+                    1) + s_shift] = tmp
             elif self.pool_method == 'max':
                 for i in range(batch_size):
                     for j in range(seq_len[i]):
@@ -336,12 +337,13 @@ class CamembertWordPieceEncoder(nn.Module):
     def num_embedding(self):
         return self.model.encoder.config.vocab_size
 
-    def index_datasets(self, *datasets, field_name, add_cls_sep=True, add_prefix_space=True):
+    def index_datasets(self, *datasets, field_name,
+                       add_cls_sep=True, add_prefix_space=True):
         r"""
         :return:
         """
         self.model.index_datasets(*datasets, field_name=field_name,
-                                  add_cls_sep=add_cls_sep)#, add_prefix_space=add_prefix_space)
+                                  add_cls_sep=add_cls_sep)  # , add_prefix_space=add_prefix_space)
 
     def forward(self, word_pieces, token_type_ids=None):
 
@@ -369,7 +371,8 @@ class CamembertWordPieceEncoder(nn.Module):
 
 
 class _WordPieceRobertaModel(nn.Module):
-    def __init__(self, model_dir_or_name: str, layers: str = '-1', pooled_cls: bool=False):
+    def __init__(self, model_dir_or_name: str, layers: str = '-1',
+                 pooled_cls: bool = False):
         super().__init__()
 
         self.tokenzier = CamembertTokenizer.from_pretrained(model_dir_or_name)
@@ -382,10 +385,11 @@ class _WordPieceRobertaModel(nn.Module):
         self._wordpiece_unknown_index = self.tokenzier.encoder['<unk>']
         self.pooled_cls = pooled_cls
 
-    def index_datasets(self, *datasets, field_name, add_cls_sep=True, add_prefix_space=True):
+    def index_datasets(self, *datasets, field_name,
+                       add_cls_sep=True, add_prefix_space=True):
 
         encode_func = partial(
-            self.tokenzier.encode, add_special_tokens=add_cls_sep)#, add_prefix_space=add_prefix_space)
+            self.tokenzier.encode, add_special_tokens=add_cls_sep)  # , add_prefix_space=add_prefix_space)
 
         for index, dataset in enumerate(datasets):
             try:
@@ -409,7 +413,7 @@ class _WordPieceRobertaModel(nn.Module):
             (len(self.layers), batch_size, max_len, roberta_outputs[0].size(-1)))
         for l_index, l in enumerate(self.layers):
             roberta_output = roberta_outputs[l]
-            if l in (len(roberta_output)-1, -1) and self.pooled_cls:
+            if l in (len(roberta_output) - 1, -1) and self.pooled_cls:
                 roberta_output[:, 0] = pooled_cls
             outputs[l_index] = roberta_output
         return outputs

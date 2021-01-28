@@ -14,8 +14,6 @@ from fastNLP.core.instance import Instance
 from fastNLP import Const
 from typing import Union, Dict
 
-from tqdm import tqdm
-
 from fastNLP.io.file_utils import _get_dataset_url, get_cache_path, cached_path
 
 
@@ -23,14 +21,11 @@ def iob2bioes(tags):
 
     new_tags = []
     for i, tag in enumerate(tags):
-       # print(tag)
         tag = tag.replace('S-', 'B-')
         tag = tag.replace('E-', 'I-')
         if '-' not in tag:
             if tag != 'O':
                 tag = 'O'
-        if '0' in tag:
-            print('WTF')
         if tag == 'O':
             new_tags.append(tag)
         else:
@@ -55,7 +50,6 @@ def iob2bioes(tags):
 def iob2(tags):
 
     for i, tag in enumerate(tags):
-        # print(tag)
         if '0' in tag:
             tag = 'O'
         tag = tag.replace('S-', 'B-')
@@ -114,7 +108,6 @@ class Loader:
         paths = check_loader_paths(paths)
 
         datasets = {}
-#        for name, path in tqdm(paths.items(), total=len(paths.items())):
         for name, path in paths.items():
             datasets[name] = self._load(path)
         data_bundle = DataBundle(datasets=datasets)
@@ -141,12 +134,11 @@ class NERLoader(Loader):
     def __init__(self, sep=None, dropna=True):
         super(NERLoader, self).__init__()
         headers = [
-            # , 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
             'raw_words', 'target'
         ]
         # TODO: This needs to be changed if the data format is different or the
         # order of the elements in the file is different
-        indexes = [0, 1]  # , 2, 3, 4, 5, 6, 7]
+        indexes = [0, 1]  
         if not isinstance(headers, (list, tuple)):
             raise TypeError(
                 'invalid headers: {}, should be list of strings'.format(headers))
@@ -163,13 +155,11 @@ class NERLoader(Loader):
     @functools.lru_cache(maxsize=1024)
     def _load(self, path):
         ds = DataSet()
-        #import pdb;pdb.set_trace()
         for idx, data in _read_conll(
                 path, indexes=self.indexes, dropna=self.dropna):
-            # print(data)
-            if data[0][0] == '#':
-                data[0] = data[0][1:]
-                data[1] = data[1][1:]
+#            if data[0][0] == '#':
+#                data[0] = data[0][1:]
+#                data[1] = data[1][1:]
             for i in range(len(self.headers)):
                 if data[i][0].startswith('NE-'):
                     data[i] = data[i][1:]
@@ -237,7 +227,6 @@ def _indexize(data_bundle, input_field_names=Const.INPUT,
             *data_bundle.datasets.values(), field_name=input_field_name)
         data_bundle.set_vocab(src_vocab, input_field_name)
 
-    # print(src_vocab)
     for target_field_name in target_field_names:
         tgt_vocab = Vocabulary(unknown=None, padding=None)
         tgt_vocab.from_dataset(*[ds for name, ds in data_bundle.iter_datasets() if 'train' in name],
@@ -251,8 +240,6 @@ def _indexize(data_bundle, input_field_names=Const.INPUT,
                        f"data set but not in train data set!.\n" \
                        f"These label(s) are {tgt_vocab._no_create_word}"
             print(warn_msg)
-        print(tgt_vocab)
-        #import pdb;pdb.set_trace()
         tgt_vocab.index_dataset(*[ds for ds in data_bundle.datasets.values()
                                   if ds.has_field(target_field_name)], field_name=target_field_name)
         data_bundle.set_vocab(tgt_vocab, target_field_name)
@@ -287,16 +274,11 @@ class DataReader(Pipe):
             data_bundle.apply_field(
                 word_shape, field_name='raw_words', new_field_name='word_shapes')
             data_bundle.set_input('word_shapes')
-        #import pdb;pdb.set_trace()
+
         data_bundle.apply_field(lambda chars: [''.join(['0' if c.isdigit() else c for c in char]) for char in chars],
                                 field_name=Const.INPUT, new_field_name=Const.INPUT)
 
-        print(self.vocabulary)
-        _indexize(data_bundle, target_field_names=[  # , 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
-                  'target'], vocabulary=self.vocabulary)
-        # input_fields = [Const.TARGET, Const.INPUT, Const.INPUT_LEN]
-        # 'target1', 'target2', 'target3', 'target4', 'target5', 'target6',
-        # , 'target1', 'target2', 'target3', 'target4', 'target5', 'target6'
+        _indexize(data_bundle, target_field_names=['target'], vocabulary=self.vocabulary)
         input_fields = [Const.TARGET, Const.INPUT, Const.INPUT_LEN]
         target_fields = [Const.TARGET, Const.INPUT_LEN]
 
@@ -305,7 +287,6 @@ class DataReader(Pipe):
 
         data_bundle.set_input(*input_fields)
         data_bundle.set_target(*target_fields)
-        #import pdb;pdb.set_trace()
         return data_bundle
 
     def process_from_file(self, paths) -> DataBundle:

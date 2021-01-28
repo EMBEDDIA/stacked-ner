@@ -169,7 +169,7 @@ def predict(path, data_bundle, predictor, predict_on='test', do_eval=False):
         for i, j in zip(dataset_test, predictions['pred']):
             if isinstance(j[0], int):
                 f.write(str(i['raw_words'][0]) +
-                        '\tO\tO\tO\tO\tO\t_\t_\t_\t_\n')
+                        '\n')
             else:
                 labels = list([data_bundle.get_vocab(
                     'target').idx2word[x] for x in j[0]])
@@ -180,7 +180,7 @@ def predict(path, data_bundle, predictor, predict_on='test', do_eval=False):
                         str(word) +
                         '\t' +
                         str(label) +
-                        '\tO\tO\tO\tO\t_\t_\t_\t_\n')
+                        '\n')
             f.write('\n')
     return predictions
 

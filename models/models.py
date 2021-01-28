@@ -44,8 +44,7 @@ class StackedTransformersCRF(nn.Module):
 
         self.fc_dropout = nn.Dropout(fc_dropout)
 
-    def _forward(self, words, target=None, target1=None, target2=None, target3=None,
-                 target4=None, target5=None, target6=None, bigrams=None, seq_len=None):
+    def _forward(self, words, target=None, bigrams=None, seq_len=None):
 
         torch.cuda.empty_cache()
 
@@ -83,10 +82,8 @@ class StackedTransformersCRF(nn.Module):
                     results['pred' + str(i)] = torch.argmax(logits[i], 2)
             return results
 
-    def forward(self, words, target=None, target1=None, target2=None,
-                target3=None, target4=None, target5=None, target6=None, seq_len=None):
-        return self._forward(words, target, target1, target2,
-                             target3, target4, target5, target6, seq_len)
+    def forward(self, words, target=None, seq_len=None):
+        return self._forward(words, target, seq_len)
 
     def predict(self, words, seq_len=None):
         return self._forward(words, target=None)
@@ -141,10 +138,8 @@ class BertCRF(nn.Module):
 
             return results
 
-    def forward(self, words, target=None, target1=None, target2=None,
-                target3=None, target4=None, target5=None, target6=None, seq_len=None):
-        return self._forward(words, target, target1, target2,
-                             target3, target4, target5, target6, seq_len)
+    def forward(self, words, target=None, seq_len=None):
+        return self._forward(words, target, seq_len)
 
     def predict(self, words, seq_len=None):
         return self._forward(words, target=None)

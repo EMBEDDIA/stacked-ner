@@ -55,9 +55,6 @@ class StackedTransformersCRF(nn.Module):
             bigrams = self.bi_embed(bigrams)
             words = torch.cat([words, bigrams], dim=-1)
 
-        # Adrián
-        #import pdb;pdb.set_trace()
-        #targets = [target, target1, target2, target3, target4, target5, target6]
         targets = [target]
 
         chars = self.in_fc(words)
@@ -113,19 +110,11 @@ class BertCRF(nn.Module):
                 len(tag_vocabs[i]), include_start_end_trans=True, allowed_transitions=trans)
             self.crfs.append(crf)
 
-    def _forward(self, words, target=None, target1=None, target2=None,
-                 target3=None, target4=None, target5=None, target6=None, seq_len=None):
+    def _forward(self, words, target=None, seq_len=None):
         mask = words.ne(0)
         words = self.embed(words)
 
-        targets = [
-            target,
-            target1,
-            target2,
-            target3,
-            target4,
-            target5,
-            target6]
+        targets = [target]
 
         words_fcs = []
         for i in range(len(targets)):

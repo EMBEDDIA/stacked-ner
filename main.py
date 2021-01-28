@@ -101,8 +101,8 @@ if output_dir:
     # change if other extension
     files = [os.path.join(path, f) for path, directories, files in os.walk(dataset_dir) for f in files if f.endswith("." + args.extension)
              and not os.path.exists(os.path.join(path.replace(dataset_dir, output_dir), f))]
-#    import pdb
-#    pdb.set_trace()
+
+
 paths = {'test': args.test_dataset,
          'train': args.train_dataset,
          'dev': args.dev_dataset}
@@ -222,7 +222,6 @@ def main():
 
     callbacks = []
     clip_callback = GradientClipCallback(clip_type='value', clip_value=5)
-    # , batch_size=8, use_cuda=False)
     evaluate_callback = EvaluateCallback(data_bundle.get_dataset('test'))
     checkpoint_callback = CheckPointCallback(
         os.path.join(directory, 'model.pth'), delete_when_train_finish=False,

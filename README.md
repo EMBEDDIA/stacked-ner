@@ -56,8 +56,8 @@ pip install -r requirements.txt
 ```
 
 #### How to citate:
-```
 
+```
 @inproceedings{boros2020robust,
   title={Robust named entity recognition and linking on historical multilingual documents},
   author={Boros, Emanuela and Pontes, Elvys Linhares and Cabrera-Diego, Luis Adri{\'a}n and Hamdi, Ahmed and Moreno, Jos{\'e} and Sid{\`e}re, Nicolas and Doucet, Antoine},
@@ -68,8 +68,9 @@ pip install -r requirements.txt
   year={2020},
   organization={CEUR-WS Working Notes}
 }
+```
 
-
+```
 @inproceedings{borocs2020alleviating,
   title={Alleviating digitization errors in named entity recognition for historical documents},
   author={Boro{\c{s}}, Emanuela and Hamdi, Ahmed and Pontes, Elvys Linhares and Cabrera-Diego, Luis-Adri{\'a}n and Moreno, Jose G and Sidere, Nicolas and Doucet, Antoine},

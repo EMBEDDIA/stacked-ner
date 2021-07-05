@@ -56,6 +56,7 @@ pip install -r requirements.txt
 ```
 
 #### How to citate:
+```
 
 @inproceedings{boros2020robust,
   title={Robust named entity recognition and linking on historical multilingual documents},
@@ -76,4 +77,5 @@ pip install -r requirements.txt
   pages={431--441},
   year={2020}
 }
+```
 

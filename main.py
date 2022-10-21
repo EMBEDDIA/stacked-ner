@@ -132,14 +132,9 @@ def load_data(paths, load_embed=True):
         encoding_type=encoding_type).process_from_file(paths)
 
     if load_embed:
-        if args.language != 'french':
-            embed = BertEmbedding(vocab=data.get_vocab(
-                'words'), model_dir_or_name=args.pre_trained_model,
-                requires_grad=True, layers='0,-1,-2,-3,-4,-5', auto_truncate=True)
-        else:
-            embed = CamembertEmbedding(vocab=data.get_vocab(
-                'words'), model_dir_or_name=args.pre_trained_model, requires_grad=True, layers='0',
-                auto_truncate=True)
+        embed = BertEmbedding(vocab=data.get_vocab(
+            'words'), model_dir_or_name=args.pre_trained_model,
+            requires_grad=True, layers='0,-1,-2,-3,-4,-5', auto_truncate=True)
 
         return data, embed
     return data
@@ -178,7 +173,7 @@ def predict(path, data_bundle, predictor, predict_on='test', do_eval=False):
                 for word, label in zip(i['raw_words'], labels):
                     f.write(
                         str(word) +
-                        '\t' +
+                        ' _ _ ' +
                         str(label) +
                         '\n')
             f.write('\n')

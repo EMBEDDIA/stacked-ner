@@ -1,31 +1,123 @@
 # -*- coding: utf-8 -*-
 """Partially https://github.com/fastnlp/fastNLP"""
-
-from fastNLP.core.vocabulary import Vocabulary
 import functools
+__all__ = [
+    "Loader"
+]
+
 from fastNLP.io import Pipe
 from fastNLP.io import DataBundle
 from fastNLP.io.pipe.utils import _add_words_field
 from fastNLP.io.utils import check_loader_paths
 
-from fastNLP.io.loader.conll import _read_conll
+from fastNLP.core.vocabulary import Vocabulary
 from fastNLP.core.dataset import DataSet
 from fastNLP.core.instance import Instance
 from fastNLP import Const
 from typing import Union, Dict
 
+from tqdm import tqdm
+
 from fastNLP.io.file_utils import _get_dataset_url, get_cache_path, cached_path
+
+
+def _read_conll(path, encoding='utf-8', sep=None, indexes=None, dropna=True):
+    r"""
+    Construct a generator to read conll items.
+    :param path: file path
+    :param encoding: file's encoding, default: utf-8
+    :param sep: seperator
+    :param indexes: conll object's column indexes that needed, if None, all columns are needed. default: None
+    :param dropna: weather to ignore and drop invalid data,
+            :if False, raise ValueError when reading invalid data. default: True
+    :return: generator, every time yield (line number, conll item)
+    """
+
+    def parse_conll(sample):
+        sample = list(map(list, zip(*sample)))
+        sample = [sample[i] for i in indexes]
+        for f in sample:
+            if len(f) <= 0:
+                raise ValueError('empty field')
+        return sample
+
+    with open(path, 'r', encoding=encoding) as f:
+
+        sample = []
+        start = next(f).strip()
+
+        data = []
+        if start != '':
+            sample.append(
+                start.split(sep)) if sep else sample.append(
+                start.split())
+
+        for line_idx, line in enumerate(f, 1):
+            line = line.strip()
+            if 'DOCSTART' in line:
+                continue
+            if '###' in line:
+                continue
+            if "# id" in line:
+                continue
+            if "Token" in line:
+                continue
+            if "TOKEN" in line:
+                continue
+            if '###' in line:
+                continue
+            if line == '':
+                if len(sample):
+                    try:
+                        res = parse_conll(sample)
+                        sample = []
+                        if ['TOKEN'] not in res:
+                            if ['Token'] not in res:
+                                data.append([line_idx, res])
+                    except Exception as e:
+                        if dropna:
+                            print(
+                                'Invalid instance which ends at line: {} has been dropped.'.format(line_idx))
+                            sample = []
+                            raise e
+                            continue
+                        raise ValueError(
+                            'Invalid instance which ends at line: {}'.format(line_idx))
+            else:
+
+                sample.append(
+                    line.split(sep)) if sep else sample.append(
+                    line.split())
+
+        if len(sample) > 0:
+            try:
+                res = parse_conll(sample)
+                if ['TOKEN'] not in res:
+                    if ['Token'] not in res:
+                        data.append([line_idx, res])
+            except Exception as e:
+                if dropna:
+                    return
+                print('Invalid instance ends at line: {}'.format(line_idx))
+                raise e
+
+        return data
 
 
 def iob2bioes(tags):
 
     new_tags = []
+#    print(tags)
     for i, tag in enumerate(tags):
+        # print(tag)
         tag = tag.replace('S-', 'B-')
         tag = tag.replace('E-', 'I-')
+        #tag = tag.replace('B-', 'I-')
         if '-' not in tag:
             if tag != 'O':
                 tag = 'O'
+        if '0' in tag:
+            print('WTF')
         if tag == 'O':
             new_tags.append(tag)
         else:
@@ -41,8 +133,6 @@ def iob2bioes(tags):
                 else:
                     new_tags.append(tag.replace('I-', 'E-'))
             else:
-                import pdb
-                pdb.set_trace()
                 raise TypeError("Invalid IOB format.")
     return new_tags
 
@@ -54,6 +144,7 @@ def iob2(tags):
             tag = 'O'
         tag = tag.replace('S-', 'B-')
         tag = tag.replace('E-', 'I-')
+        tag = tag.replace('B-', 'I-')
         if '-' not in tag:
             if tag != 'O':
                 tag = 'O'
@@ -108,7 +199,7 @@ class Loader:
         paths = check_loader_paths(paths)
 
         datasets = {}
-        for name, path in paths.items():
+        for name, path in tqdm(paths.items(), total=len(paths.items())):
             datasets[name] = self._load(path)
         data_bundle = DataBundle(datasets=datasets)
         return data_bundle
@@ -129,16 +220,24 @@ class Loader:
         return output_dir
 
 
+def subfinder(mylist, pattern):
+    matches = []
+    for i in range(len(mylist)):
+        if mylist[i] == pattern[0] and mylist[i:i + len(pattern)] == pattern:
+            matches.append((pattern, i))
+    return matches
+
+
 class NERLoader(Loader):
 
-    def __init__(self, sep=None, dropna=True):
+    def __init__(self, sep=' ', dropna=True):
         super(NERLoader, self).__init__()
         headers = [
             'raw_words', 'target'
         ]
         # TODO: This needs to be changed if the data format is different or the
         # order of the elements in the file is different
-        indexes = [0, 1]  
+        indexes = [0, -1]
         if not isinstance(headers, (list, tuple)):
             raise TypeError(
                 'invalid headers: {}, should be list of strings'.format(headers))
@@ -155,29 +254,49 @@ class NERLoader(Loader):
     @functools.lru_cache(maxsize=1024)
     def _load(self, path):
         ds = DataSet()
-        for idx, data in _read_conll(
-                path, indexes=self.indexes, dropna=self.dropna):
-#            if data[0][0] == '#':
-#                data[0] = data[0][1:]
-#                data[1] = data[1][1:]
+        idx = 0
+        for element in _read_conll(
+                path,
+                indexes=self.indexes,
+                dropna=self.dropna):
+            idx, data = element
+            # if data[0][0] == '#' and data[1][0] == '--':
+            #     continue
+            # if data[0][0] == '#':
+            #     data[0] = data[0][1:]
+            #     data[1] = data[1][1:]
+            if len(data[0]) < 1:
+                continue
             for i in range(len(self.headers)):
-                if data[i][0].startswith('NE-'):
-                    data[i] = data[i][1:]
-                if 'TOKEN' in data[i][0]:
+                try:
+                    if data[i][0].startswith('NE-'):
+                        data[i] = data[i][1:]
+                except BaseException:
+                    raise TypeError("Data problem.")
+                if 'TOKEN' in data[i][0].upper():
                     data[i] = data[i][1:]
 
-            # print(data) #data[1] = iob(list(data[1]))
+                if len(data[i]) == 0:
+                    continue
             doc_start = False
             for i, h in enumerate(self.headers):
                 field = data[i]
-                if str(' '.join(list(field))).startswith(' #'):
-                    continue
+                if len(field) == 0:
+                    break
+                # if str(' '.join(list(field))).startswith(' #'):
+                    # continue
                 if str(field[0]).startswith('-DOCSTART-'):
                     doc_start = True
                     break
+                # if str(' '.join(list(field))).startswith('#'):
+                #     continue
+
             if doc_start:
                 continue
+
+            idx += 1
             ins = {h: data[i] for i, h in enumerate(self.headers)}
+
             ds.append(Instance(**ins))
         if len(ds) == 0:
             raise RuntimeError("No data found {}.".format(path))
@@ -206,34 +325,53 @@ def word_shape(words):
     return shapes
 
 
-def _indexize(data_bundle, input_field_names=Const.INPUT,
-              target_field_names=Const.TARGET, vocabulary=None):
+def _indexize(
+        data_bundle,
+        input_field_names=Const.INPUT,
+        target_field_names=Const.TARGET,
+        vocabulary=None):
+
     if isinstance(input_field_names, str):
         input_field_names = [input_field_names]
     if isinstance(target_field_names, str):
         target_field_names = [target_field_names]
+
     for input_field_name in input_field_names:
         if vocabulary is None:
             src_vocab = Vocabulary()
-            src_vocab.from_dataset(*[ds for name, ds in data_bundle.iter_datasets() if 'train' in name],
-                                   field_name=input_field_name,
-                                   no_create_entry_dataset=[ds for name, ds in data_bundle.iter_datasets()
-                                                            if ('train' not in name) and (ds.has_field(input_field_name))]
-                                   )
+
+            src_vocab.from_dataset(
+                *
+                [
+                    ds for name,
+                    ds in data_bundle.iter_datasets() if 'train' in name],
+                field_name=input_field_name,
+                no_create_entry_dataset=[
+                    ds for name,
+                    ds in data_bundle.iter_datasets() if (
+                        'train' not in name) and (
+                        ds.has_field(input_field_name))])
 
         else:
             src_vocab = vocabulary
+
         src_vocab.index_dataset(
             *data_bundle.datasets.values(), field_name=input_field_name)
-        data_bundle.set_vocab(src_vocab, input_field_name)
 
+        data_bundle.set_vocab(src_vocab, input_field_name)
     for target_field_name in target_field_names:
         tgt_vocab = Vocabulary(unknown=None, padding=None)
-        tgt_vocab.from_dataset(*[ds for name, ds in data_bundle.iter_datasets() if 'train' in name],
-                               field_name=target_field_name,
-                               no_create_entry_dataset=[ds for name, ds in data_bundle.iter_datasets()
-                                                        if ('train' not in name) and (ds.has_field(target_field_name))]
-                               )
+        tgt_vocab.from_dataset(
+            *
+            [
+                ds for name,
+                ds in data_bundle.iter_datasets() if 'train' in name],
+            field_name=target_field_name,
+            no_create_entry_dataset=[
+                ds for name,
+                ds in data_bundle.iter_datasets() if (
+                    'train' not in name) and (
+                    ds.has_field(target_field_name))])
         if len(tgt_vocab._no_create_word) > 0:
             warn_msg = f"There are {len(tgt_vocab._no_create_word)} `{target_field_name}` labels" \
                        f" in {[name for name in data_bundle.datasets.keys() if 'train' not in name]} " \
@@ -241,7 +379,7 @@ def _indexize(data_bundle, input_field_names=Const.INPUT,
                        f"These label(s) are {tgt_vocab._no_create_word}"
             print(warn_msg)
         tgt_vocab.index_dataset(*[ds for ds in data_bundle.datasets.values()
-                                  if ds.has_field(target_field_name)], field_name=target_field_name)
+                                if ds.has_field(target_field_name)], field_name=target_field_name)
         data_bundle.set_vocab(tgt_vocab, target_field_name)
 
     return data_bundle
@@ -249,8 +387,12 @@ def _indexize(data_bundle, input_field_names=Const.INPUT,
 
 class DataReader(Pipe):
 
-    def __init__(self, encoding_type: str = 'bio', lower: bool = False,
-                 word_shape: bool = False, vocabulary=None):
+    def __init__(
+            self,
+            encoding_type: str = 'bio',
+            lower: bool = False,
+            word_shape: bool = False,
+            vocabulary=None):
 
         if encoding_type == 'bio':
             self.convert_tag = iob2
@@ -263,22 +405,36 @@ class DataReader(Pipe):
         self.vocabulary = vocabulary
 
     def process(self, data_bundle: DataBundle) -> DataBundle:
-
+        #import pdb;pdb.set_trace()
         for name, dataset in data_bundle.datasets.items():
             dataset.apply_field(
-                self.convert_tag, field_name=Const.TARGET, new_field_name=Const.TARGET)
+                self.convert_tag,
+                field_name=Const.TARGET,
+                new_field_name=Const.TARGET)
 
         _add_words_field(data_bundle, lower=self.lower)
 
         if self.word_shape:
             data_bundle.apply_field(
-                word_shape, field_name='raw_words', new_field_name='word_shapes')
+                word_shape,
+                field_name='raw_words',
+                new_field_name='word_shapes')
             data_bundle.set_input('word_shapes')
+        data_bundle.apply_field(
+            lambda chars: [
+                ''.join(
+                    [
+                        '0' if c.isdigit() else c for c in char]) for char in chars],
+            field_name=Const.INPUT,
+            new_field_name=Const.INPUT)
 
-        data_bundle.apply_field(lambda chars: [''.join(['0' if c.isdigit() else c for c in char]) for char in chars],
-                                field_name=Const.INPUT, new_field_name=Const.INPUT)
+        _indexize(
+            data_bundle,
+            input_field_names=[
+                Const.INPUT],
+            target_field_names=['target'],
+            vocabulary=self.vocabulary)
 
-        _indexize(data_bundle, target_field_names=['target'], vocabulary=self.vocabulary)
         input_fields = [Const.TARGET, Const.INPUT, Const.INPUT_LEN]
         target_fields = [Const.TARGET, Const.INPUT_LEN]
 
@@ -287,6 +443,7 @@ class DataReader(Pipe):
 
         data_bundle.set_input(*input_fields)
         data_bundle.set_target(*target_fields)
+
         return data_bundle
 
     def process_from_file(self, paths) -> DataBundle:

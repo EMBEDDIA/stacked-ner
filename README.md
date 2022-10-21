@@ -54,3 +54,29 @@ Wienstrasse	I-LOC	O	O	O	O	O	null	O	SpaceAfter
 ```
 pip install -r requirements.txt
 ```
+
+#### How to citate:
+
+```
+@inproceedings{boros2020robust,
+  title={Robust named entity recognition and linking on historical multilingual documents},
+  author={Boros, Emanuela and Pontes, Elvys Linhares and Cabrera-Diego, Luis Adri{\'a}n and Hamdi, Ahmed and Moreno, Jos{\'e} and Sid{\`e}re, Nicolas and Doucet, Antoine},
+  booktitle={Conference and Labs of the Evaluation Forum (CLEF 2020)},
+  volume={2696},
+  number={Paper 171},
+  pages={1--17},
+  year={2020},
+  organization={CEUR-WS Working Notes}
+}
+```
+
+```
+@inproceedings{borocs2020alleviating,
+  title={Alleviating digitization errors in named entity recognition for historical documents},
+  author={Boro{\c{s}}, Emanuela and Hamdi, Ahmed and Pontes, Elvys Linhares and Cabrera-Diego, Luis-Adri{\'a}n and Moreno, Jose G and Sidere, Nicolas and Doucet, Antoine},
+  booktitle={Proceedings of the 24th Conference on Computational Natural Language Learning},
+  pages={431--441},
+  year={2020}
+}
+```
+

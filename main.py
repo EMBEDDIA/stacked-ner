@@ -11,7 +11,7 @@ from fastNLP import SpanFPreRecMetric, BucketSampler
 from modules.pipe import DataReader
 from modules.callbacks import EvaluateCallback
 from modules.utils import set_rng_seed
-from embeddings import BertEmbedding, CamembertEmbedding
+from embeddings import BertEmbedding
 import os
 import torch
 import argparse

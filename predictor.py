@@ -7,7 +7,6 @@ __all__ = [
 from collections import defaultdict
 
 import torch
-from torch.nn.modules.module import ModuleAttributeError
 from fastNLP import DataSet
 from fastNLP import DataSetIter
 from fastNLP import SequentialSampler
@@ -47,7 +46,7 @@ class Predictor(object):
         # multi-GPU
         try:
             predict_func = self.network.predict
-        except ModuleAttributeError:
+        except Exception:
             predict_func = self.network.module.predict
 
         with torch.no_grad():

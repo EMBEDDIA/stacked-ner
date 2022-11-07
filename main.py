@@ -189,7 +189,7 @@ def main():
         model = BertCRF(embed,
                         [data_bundle.get_vocab('target')],
                         encoding_type='bioes')
-
+        model.to('cuda')
     else:
         model = StackedTransformersCRF(tag_vocabs=[data_bundle.get_vocab('target')],
                                        embed=embed, num_layers=num_layers,

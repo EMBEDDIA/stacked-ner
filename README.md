@@ -46,7 +46,35 @@ python main.py
 
 ```
 TOKEN	NE-COARSE-LIT	NE-COARSE-METO	NE-FINE-LIT	NE-FINE-METO	NE-FINE-COMP	NE-NESTED	NEL-LIT	NEL-METO	MISC
-Wienstrasse	I-LOC	O	O	O	O	O	null	O	SpaceAfter
+# language = fr
+# newspaper = GDL
+# date = 1878-02-22
+# document_id = GDL-1878-02-22-a-i0014
+# segment_iiif_link = _
+LAUSANNE	B-loc	O	B-loc.adm.town	O	O	O	Q807	_	EndOfLine
+
+On	O	O	O	O	O	O	_	_	_
+nous	O	O	O	O	O	O	_	_	_
+prie	O	O	O	O	O	O	_	_	_
+de	O	O	O	O	O	O	_	_	_
+faire	O	O	O	O	O	O	_	_	_
+connaître	O	O	O	O	O	O	_	_	_
+le	O	O	O	O	O	O	_	_	_
+résultat	O	O	O	O	O	O	_	_	EndOfLine
+Sécuniaire	O	O	O	O	O	O	_	_	_
+des	O	O	O	O	O	O	_	_	_
+quatre	O	O	O	O	O	O	_	_	_
+conférences	O	O	O	O	O	O	_	_	_
+sur	O	O	O	O	O	O	_	_	_
+l'	O	O	O	O	O	O	_	_	NoSpaceAfter
+Orient	B-loc	O	B-loc.adm.sup	O	O	O	Q205653	_	EndOfLine
+
+M	B-pers	O	B-pers.ind	O	B-comp.title	O	Q123894	_	NoSpaceAfter
+.	I-pers	O	I-pers.ind	O	I-comp.title	O	Q123894	_	_
+le	I-pers	O	I-pers.ind	O	O	O	Q123894	_	_
+professeur	I-pers	O	I-pers.ind	O	B-comp.function	O	Q123894	_	_
+Gilliéron	I-pers	O	I-pers.ind	O	B-comp.name	O	Q123894	_	NoSpaceAfter
+.	O	O	O	O	O	O	_	_	EndOfLine
 
 ```
 
